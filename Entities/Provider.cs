@@ -9,13 +9,13 @@ public sealed class Provider : EntityBase
     [MaybeNull]
     public string Company { get; set; }
 
-    [MaybeNull]
+    [MaybeNull, Validation.NonRequiredMembersValidation(Validation.ValidationType.Number)]
     public string WorkPhone { get; set; }
 
-    [MaybeNull]
+    [MaybeNull, Validation.NonRequiredMembersValidation(Validation.ValidationType.Number)]
     public string AdditionalPhone { get; set; }
 
-    [MaybeNull]
+    [MaybeNull, Validation.NonRequiredMembersValidation(Validation.ValidationType.Email)]
     public string Email { get; set; }
 
     [MaybeNull, ForeignKey("ProviderId")]
