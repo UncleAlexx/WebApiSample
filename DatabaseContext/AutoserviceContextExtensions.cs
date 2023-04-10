@@ -22,11 +22,8 @@ public static class AutoserviceContextExtensions
                     using (var operationCancellation = new CancellationTokenSource(timeout))
                     {
                         await context!.Database.MigrateAsync(operationCancellation.Token);
-                        if ((bool)_migratedInfo!.GetValue(context)! is false)
-                        {
-                            _migratedInfo.SetValue(context, true);
-                            SetMigratedInfo(true, _migratedInfo!, context);
-                        }
+                        _migratedInfo.SetValue(context, true);
+                        SetMigratedInfo(true, _migratedInfo!, context);
                     }
                     return;
                 }
