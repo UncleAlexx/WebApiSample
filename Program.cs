@@ -16,7 +16,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddDbContext<AutoserviceContext>();
 builder.Services.AddSwaggerGen();
-builder.Services.AddFluentValidation(fv => fv.RegisterValidatorsFromAssembly(Assembly.GetExecutingAssembly()));
+builder.Services.AddFluentValidation
+    (fv => fv.RegisterValidatorsFromAssembly(Assembly.GetExecutingAssembly()));
 var provider = builder.Services.BuildServiceProvider();
 var autoserviceRepo = await AutoserviceRepositoryFactory.CreateAutoserviceRepository((AutoserviceContext)provider.GetService(typeof(AutoserviceContext))!);
 builder.Services.AddTransient(async x => await AutoserviceRepositoryFactory.CreateAutoserviceRepository((AutoserviceContext)provider.GetService(typeof(DbContext))!));
@@ -38,7 +39,9 @@ app.MapGet("/ProviderById{id}",
 async (int id) =>
     {
         Provider? entityById = await autoserviceRepo.GetEntityById<Provider>(id);
-        return entityById is null ? Results.BadRequest($"Provider with id {id} not found in table {nameof(Provider)}") : Results.Ok(entityById);
+        return entityById is null ? 
+        Results.BadRequest($"Provider with id {id} not found in table {nameof(Provider)}") 
+            : Results.Ok(entityById);
     });
 
 app.MapGet("/SortProviderByDescendingById{order}",
@@ -61,30 +64,25 @@ async Task<IResult> (Provider provider, AutoserviceContext autoservice, IValidat
         var nonRequiredErrors = provider.GetNonRequiredErrors();
         if (validationResult.IsValid & nonRequiredErrors.First().IsValid)
         {
+            if (autoservice.Providers.Any(x => x.Id == provider.Id) is false)
+            {
+                return Results.BadRequest($"updating failed an id doesnt exist in table {nameof(Provider)}");
+            }
+
             try
             {
-                if (autoservice.Providers.Any(x => x.Id == provider.Id) is false)
-                {
-                    return Results.BadRequest($"updating failed an id doesnt exist in table {nameof(Provider)}");
-                }
-                try
-                {
-                    autoservice.Providers.Update(provider);
-                    await autoservice.SaveChangesAsync();
-                    return Results.Created("/UpdateProviderById/{provider})", provider);
-                }
-                catch
-                {
-                    return Results.BadRequest($"updating failed in table {nameof(Provider)}");
-                }
+                autoservice.Providers.Update(provider);
+                await autoservice.SaveChangesAsync();
+                return Results.Created("/UpdateProviderById/{provider})", provider);
             }
             catch
             {
-                return Results.BadRequest("updating failed");
+                return Results.BadRequest($"updating failed in table {nameof(Provider)}");
             }
         }
         requiredErrors.AddRange(validationResult.Errors.Select(x => $"errorType = required, message = {x.ErrorMessage}"));
-        requiredErrors.AddRange(nonRequiredErrors.Where(x => x.IsValid is false).Select(x => $"error type is {nameof(NonRequiredMemberError).ToLower().AsSpan()[..11]} error is {x.Error.Message}"));
+        requiredErrors.AddRange(nonRequiredErrors.Where(x => x.IsValid is false).Select(x => 
+            $"error type is {nameof(NonRequiredMemberError).ToLower().AsSpan()[..11]} error is {x.Error.Message}"));
         return Results.BadRequest(requiredErrors);
     });
 
@@ -132,7 +130,8 @@ async Task<IResult> (Provider provider, AutoserviceContext autoservice, IValidat
         }
         requiredErrors.AddRange(validationResult.Errors.Select(x => $"errorType = required, message = {x.ErrorMessage}"));
 
-        requiredErrors.AddRange(nonRequiredErrors.Where(x => x.IsValid is false).Select(x => $"error type is {nameof(NonRequiredMemberError).ToLower().AsSpan()[..11]} error is {x.Error.Message}"));
+        requiredErrors.AddRange(nonRequiredErrors.Where(x => x.IsValid is false).Select(x => $"error type is " +
+            $"{nameof(NonRequiredMemberError).ToLower().AsSpan()[..11]} error is {x.Error.Message}"));
         return Results.BadRequest(requiredErrors);
     });
 app.UseHttpsRedirection();
