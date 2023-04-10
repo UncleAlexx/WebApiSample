@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics.CodeAnalysis;
 namespace EfCoreSample.Entities;
 
+[Table(nameof(Parts))]
 public sealed class Parts : EntityBase
 {
     [MaybeNull]
