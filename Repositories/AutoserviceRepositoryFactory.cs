@@ -1,8 +1,9 @@
 ﻿using EfCoreSample.DatabaseContext;
 using EfCoreSample.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Migrations.Operations;
 using System.Diagnostics;
-using System.Security.Cryptography;
+using System.Reflection.Metadata.Ecma335;
 
 namespace EfCoreSample.Repositories;
 
@@ -45,18 +46,23 @@ public static class AutoserviceRepositoryFactory
         public bool Migrated => _dbContext?.Migrated??false;
 
 
-        async ValueTask<bool> IRepository<EntityBase>.TryAddEntities<T>(DbSet<T> table, params T[] entities)
+        async ValueTask<(T[] added, bool isCompleted)> IRepository<EntityBase>.TryAddEntities<T>(DbSet<T> table, params T[] entities)
         {
             try
             {
+                if(entities.Any(x => table.Any(entity =>  entity.Id == x.Id))) 
+                {
+                    Trace.WriteLine("an entity with an id already exists in the table");
+                    return (Array.Empty<T>(), false);
+                }
                 table!.AddRange(entities);
                 await _dbContext.SaveChangesAsync();
-                return true;
+                return (entities, true);
             }
             catch (Exception e)
             {
                 Trace.WriteLine(e);
-                return false;
+                return (Array.Empty<T>(), false);
             }
         }
 
@@ -85,58 +91,64 @@ public static class AutoserviceRepositoryFactory
             };
         }
 
-        async ValueTask<bool> IRepository<EntityBase>.TryDeleteEntityById<T>(int id, DbSet<T> table, CancellationToken token)
+        async ValueTask<(T deleted, bool isCompleted)> IRepository<EntityBase>.TryDeleteEntityById<T>(int id, DbSet<T> table, CancellationToken token)
         {
             try
             {
+                if (table.Any(entity => entity.Id == id) is false)
+                {
+                    Trace.TraceError($"entity with id {id} doesn't exist and can't be deleted");
+                    return (null!, false);
+                }
                 var entity = await (this as IRepository<EntityBase>).GetEntityById<T>(id, token) ??
                     throw new InvalidOperationException($"id doesnt exist in table {typeof(T).Name}");
 
                 table.Remove(entity!);
                 _dbContext.SaveChanges();
-                return true;
+                return (entity, true);
             }
             catch (Exception e)
             {
-                Trace.WriteLine(e);
-                return false;
+                Trace.TraceError(e.Message);
+                return (null!, false);  
             }
         }
 
-        async ValueTask<bool> IRepository<EntityBase>.TryDeleteEntitiesByIds<T>(DbSet<T> table, params int[] ids)
+        async ValueTask<(T[], bool)> IRepository<EntityBase>.TryDeleteEntitiesByIds<T>(DbSet<T> table, params int[] ids)
         {
             try
             {
                 if (ids.All(id => table!.Any(x => x.Id == id)) is false)
                     throw new InvalidOperationException($"an id doesnt exist in the table {typeof(T).Name}");
 
-                table?.RemoveRange(ids.Select(id => table.First(entity => entity.Id == id)));
+                T[] toDelete = ids.Select(id => table.First(entity => entity.Id == id)).ToArray();
+                table?.RemoveRange(toDelete);
                 await _dbContext.SaveChangesAsync();
-                return true;
+                return (toDelete, true);
             }
             catch (Exception e)
             {
-                Trace.WriteLine(e);
-                return false;
+                Trace.TraceError(e.Message);
+                return (Array.Empty<T>(), false);
             }
         }
 
-        async ValueTask<bool> IRepository<EntityBase>.TryUpdateEntities<T>(DbSet<T> table, params T[] values)
+        async ValueTask<(T[] updated, bool isCompleted)> IRepository<EntityBase>.TryUpdateEntities<T>(DbSet<T> table, params T[] values)
         {
             try
             {
-                var oldEntities = values.Select(x => table.First(entity => entity.Id == x.Id));
                 if (values.Select(x => x.Id).All(id => table!.Any(x => x.Id == id)) is false)
                     throw new InvalidOperationException($"an id doesnt exist in the table {typeof(T).Name}");
+                var oldEntities = values.Select(x => table.First(entity => entity.Id == x.Id));
 
-                table.UpdateRange(oldEntities);
+                table.UpdateRange(values);
                 await _dbContext.SaveChangesAsync();
-                return true;
+                return (values, true);
             }
             catch (Exception e)
             {
-                Trace.WriteLine(e);
-                return false;
+                Trace.TraceError(e.Message);
+                return (values, false);
             }
         }
     }

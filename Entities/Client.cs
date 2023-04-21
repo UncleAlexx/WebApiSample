@@ -6,16 +6,16 @@ namespace EfCoreSample.Entities;
 [Table(nameof(Client))]
 public sealed class Client : EntityBase
 {
-    [MaybeNull]
+    [MaybeNull, Validation.NonRequiredMembersValidation(Validation.ValidationType.Email)]
     public string Email { get; set; }
 
-    [MaybeNull]
+    [MaybeNull, Validation.NonRequiredMembersValidation(Validation.ValidationType.Number)]
     public string WorkNumber { get; set; }
 
-    [MaybeNull]
+    [MaybeNull, Validation.NonRequiredMembersValidation(Validation.ValidationType.Number)]
     public string AdditionalPhone { get; set; }
 
-    [MaybeNull]
+    [MaybeNull, Validation.NonRequiredMembersValidation(Validation.ValidationType.Email)]
     public string AdditionalEmail { get; set; }
 
     [MaybeNull]
