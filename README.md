@@ -8,3 +8,4 @@ Strikethrough uses two tildes. ~~Scratch this.~~
 k;l;kl  
 
 The background color is `#ffffff` for light mode and `#000000` for dark mode.
+![s](1.webp)
